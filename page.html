@@ -1,118 +1,90 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Eco Breeze</title>
-    <style>
-        /* CSS Variables for theming */
-        :root {
-            --primary-color: #4CAF50;
-            --secondary-color: #f0f0f0;
-            --background-color: #ffffff;
-            --text-color: #333333;
-            --border-radius: 8px;
-            --card-padding: 20px;
-            --font-family: 'Segoe UI', Tahoma, sans-serif;
-        }
-        
-        /* Global Styles */
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-        body {
-            font-family: var(--font-family);
-            background-color: var(--secondary-color);
-            color: var(--text-color);
-            line-height: 1.6;
-            padding: 20px;
-        }
-        header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        header h1 {
-            color: var(--primary-color);
-            font-size: 2.5rem;
-        }
-        
-        /* Layout Container */
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
-        }
-        
-        /* Card Styles */
-        .card {
-            background-color: var(--background-color);
-            padding: var(--card-padding);
-            border-radius: var(--border-radius);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-        
-        /* Input Speed Section */
-        .input-speed label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: bold;
-        }
-        .input-speed input {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 20px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-size: 1rem;
-        }
-        
-        /* Fan Stats Section */
-        .fan-stats p {
-            margin-bottom: 16px;
-            font-size: 1.1rem;
-        }
-        .fan-stats span {
-            font-weight: bold;
-        }
-        
-        /* Responsive Adjustments */
-        @media (max-width: 600px) {
-            .container {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
+  <meta charset="UTF-8"/>
+  <title>Eco Breeze</title>
+  <link rel="stylesheet" href="styles.css"/>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"
+          integrity="sha256-/xUj+3OJ+Y5C4..." crossorigin="anonymous"></script>
 </head>
 <body>
-    <header>
-        <h1>Eco Breeze</h1>
-    </header>
-    <div class="container">
-        <section class="card input-speed">
-            <h2>Fan Speed Settings</h2>
-            <label for="low-speed">Enter temperature for Low speed</label>
-            <input type="number" id="low-speed" placeholder="e.g. 18">
+  <h1>Eco Breeze Dashboard</h1>
 
-            <label for="medium-speed">Enter temperature for Medium speed</label>
-            <input type="number" id="medium-speed" placeholder="e.g. 22">
+  <div class="card">
+    <h2>Current Readings</h2>
+    <p>Temp: <span id="current_temp">--</span>°C</p>
+    <p>Target: <span id="target_temp">--</span>°C</p>
+    <p>Light: <span id="light_status">--</span></p>
+    <p>Motion: <span id="motion_status">--</span></p>
+    <p>Fan Speed: <span id="fan_speed">--</span></p>
+    <button id="refreshBtn">Refresh Data</button>
+  </div>
 
-            <label for="high-speed">Enter temperature for High speed</label>
-            <input type="number" id="high-speed" placeholder="e.g. 26">
-        </section>
+  <div class="card">
+    <h2>Set Target Temperature</h2>
+    <form id="tempForm">
+      <label for="tempInput">(10–40)°C</label>
+      <input type="number" id="tempInput" min="10" max="40" value="22"/>
+      <button type="submit">Set Target</button>
+    </form>
+  </div>
 
-        <section class="card fan-stats">
-            <h2>Current Status</h2>
-            <p>Light status: <span id="light-status">--</span></p>
-            <p>Current temp: <span id="current-temp">--</span> °C</p>
-            <p>Fan speed: <span id="fan-speed">--</span></p>
-        </section>
-    </div>
-    <script>
-        
-    </script>
+  <div class="card">
+    <h2>Set Mode</h2>
+    <form id="modeForm">
+      <label><input type="radio" name="mode" value="Off" checked/>Off</label>
+      <label><input type="radio" name="mode" value="Cool"/>Cool</label>
+      <label><input type="radio" name="mode" value="Heat"/>Heat</label>
+      <button type="submit">Apply Mode</button>
+    </form>
+  </div>
+
+  <script>
+    const deviceID    = '<YOUR_DEVICE_ID>';
+    const accessToken = '<YOUR_ACCESS_TOKEN>';
+    const baseURL     = `https://api.particle.io/v1/devices/${deviceID}/`;
+
+    async function getVar(name) {
+      const resp = await fetch(`${baseURL}${name}?access_token=${accessToken}`);
+      return (await resp.json()).result;
+    }
+
+    async function callFn(name, arg) {
+      await fetch(`${baseURL}${name}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `arg=${encodeURIComponent(arg)}&access_token=${accessToken}`
+      });
+    }
+
+    async function refreshData() {
+      $('#current_temp').text((await getVar('cV_temp')).toFixed(1));
+      $('#target_temp').text((await getVar('cV_targetTemp')).toFixed(1));
+      $('#light_status').text(await getVar('cV_light'));
+      $('#motion_status').text((await getVar('cV_motion')) ? 'Yes' : 'No');
+      $('#fan_speed').text(await getVar('cV_fanSpeed'));
+    }
+
+    $('#refreshBtn').click(e => {
+      e.preventDefault();
+      refreshData();
+    });
+
+    $('#tempForm').submit(async e => {
+      e.preventDefault();
+      const val = $('#tempInput').val();
+      await callFn('cF_setTargetTemp', val);
+      refreshData();
+    });
+
+    $('#modeForm').submit(async e => {
+      e.preventDefault();
+      const m = $('input[name=mode]:checked').val();
+      await callFn('cF_setMode', m);
+      refreshData();
+    });
+
+    $(refreshData);
+  </script>
 </body>
 </html>
